@@ -129,16 +129,82 @@ If the improved policy is the same as the old policy, the policy is considered s
 # -------------------------------------------------
 # Policy Evaluation
 # -------------------------------------------------
+def policy_evaluation(env, policy, gamma=0.99, theta=1e-8):
+    V = np.zeros(env.observation_space.n)
+    iteration = 0
 
+    while True:
+        delta = 0
+
+        for s in range(env.observation_space.n):
+            v = V[s]
+            new_v = 0
+
+            for a, action_prob in enumerate(policy[s]):
+                for prob, next_state, reward, done in env.P[s][a]:
+                    new_v += action_prob * prob * (
+                        reward + gamma * V[next_state] * (not done)
+                    )
+
+            V[s] = new_v
+            delta = max(delta, abs(v - V[s]))
+
+        iteration += 1
+
+        if delta < theta:
+            break
+
+    return V, iteration
 
 
 # -------------------------------------------------
 # Policy Improvement
 # -------------------------------------------------
+def policy_improvement(env, V, policy, gamma=0.99):
+    policy_stable = True
+    n_states = env.observation_space.n
+    n_actions = env.action_space.n
+
+    for s in range(n_states):
+        old_action = np.argmax(policy[s])
+        action_values = np.zeros(n_actions)
+
+        for a in range(n_actions):
+            for prob, next_state, reward, done in env.P[s][a]:
+                action_values[a] += prob * (
+                    reward + gamma * V[next_state] * (not done)
+                )
+
+        best_action = np.argmax(action_values)
+
+        policy[s] = np.eye(n_actions)[best_action]
+
+        if old_action != best_action:
+            policy_stable = False
+
+    return policy, policy_stable
 
 #-------------------------------------------------
 # Policy Iteration
 # -------------------------------------------------
+
+def policy_iteration(env, gamma=0.99, theta=1e-8):
+    n_states = env.observation_space.n
+    n_actions = env.action_space.n
+
+    policy = np.ones((n_states, n_actions)) / n_actions
+
+    while True:
+        V, iteration = policy_evaluation(env, policy, gamma, theta)
+
+        policy, policy_stable = policy_improvement(
+            env, V, policy, gamma
+        )
+
+        if policy_stable:
+            break
+
+    return policy, V
 
 
 
@@ -147,34 +213,24 @@ If the improved policy is the same as the old policy, the policy is considered s
 
 ## Output
 
-```text
+<img width="448" height="150" alt="image" src="https://github.com/user-attachments/assets/43462a1d-9d36-424a-9194-89363bedfb03" />
 
-Total policy iterations: 
+<img width="322" height="186" alt="image" src="https://github.com/user-attachments/assets/6f67fa23-548f-49be-9b86-4a1ee6074266" />
 
-Optimal State-Value Function:
-
-
-Optimal Policy:
-
-```
-
-
-
----
+<img width="508" height="307" alt="image" src="https://github.com/user-attachments/assets/93ed2316-b3c4-4741-b4ea-1bab68bb9e23" />
 
 ## Result
 
-```text
+```
+The Policy Iteration algorithm was successfully implemented and executed using the Gymnasium FrozenLake-v1 environment. The algorithm performed policy evaluation and policy improvement repeatedly until the optimal policy was obtained and the policy became stable.
 
-
+The optimal state-value function and optimal policy were obtained for discount factors γ = 0.99 and γ = 0.90. The state-value function represents the expected rewards from each state, while the optimal policy indicates the best action to take in each state to reach the goal while avoiding holes
 
 ```
----
 
 ## Inference
-```text
-
+```
+Thus, the Policy Iteration algorithm was successfully used to solve the FrozenLake environment. It was observed that repeated policy evaluation and policy improvement helped the agent learn an optimal policy. The experiment also demonstrated that changing the discount factor affects the state-value function and the agent's decision-making. Hence, Policy Iteration is an effective Dynamic Programming technique for finding the optimal policy in a finite Markov Decision Process.
 
 ```
----
 
